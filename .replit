@@ -1,11 +1,21 @@
+
 # Replit configuration for serving the static site with Node.js
 # The modules array enables the Node.js 20 runtime and web preview pane.
 modules = ["nodejs-20", "web"]
 
-# Command executed when the Run button is pressed. It ensures the `serve`
-# package is available globally and then starts a static server bound to
-# 0.0.0.0 using the Replit-assigned $PORT so the preview opens automatically.
-run = "npm install -g serve && npx serve -s . -l $PORT"
+# Configure the Run button to launch a workflow that serves the static site
+# with `serve` bound to port 5000 so the Replit preview can connect.
+[workflows]
+runButton = "Static Site"
+
+[[workflows.workflow]]
+name = "Static Site"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx --yes serve@latest -s . -l tcp://0.0.0.0:5000"
+waitForPort = 5000
 
 # Keep the AI coding agent available in expert mode for this repl.
 [agent]
@@ -14,3 +24,7 @@ expertMode = true
 # Use the current stable Nix channel for reproducible builds.
 [nix]
 channel = "stable-25_05"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
