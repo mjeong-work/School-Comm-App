@@ -14,3 +14,7 @@ expertMode = true
 # Use the current stable Nix channel for reproducible builds.
 [nix]
 channel = "stable-25_05"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
