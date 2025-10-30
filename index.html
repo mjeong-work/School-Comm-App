@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Search AI MVP | Discover AI Tools Instantly</title>
+  <meta name="description" content="Search AI MVP is a streamlined interface to discover and evaluate AI tools fast." />
+  <meta property="og:title" content="Search AI MVP" />
+  <meta property="og:description" content="A minimal interface to explore featured AI tools and launch your search experience." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://example.com" />
+  <meta property="og:image" content="https://example.com/og-image.png" />
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <div class="hero">
+        <div class="hero__text">
+          <h1>Search AI MVP</h1>
+          <p class="hero__tagline">Launch your AI discovery experience with speed, clarity, and confidence.</p>
+        </div>
+        <a class="button button--primary" href="#">Open App</a>
+      </div>
+    </div>
+  </header>
+  <main>
+    <div class="container">
+      <section class="features" aria-labelledby="features-heading">
+        <h2 id="features-heading">Why teams choose Search AI MVP</h2>
+        <ul class="feature-list">
+          <li>Unified search across curated AI tools and services.</li>
+          <li>Instant previews with streamlined evaluation workflows.</li>
+          <li>Secure, modular foundation ready for production integration.</li>
+        </ul>
+      </section>
+
+      <section class="search-demo" aria-labelledby="search-heading">
+        <h2 id="search-heading">Try the search concept</h2>
+        <form class="search-form" action="#" method="post">
+          <label class="sr-only" for="search-input">Search for AI tools</label>
+          <input id="search-input" name="query" type="search" placeholder="Find AI tools..." autocomplete="off" />
+          <button type="submit" class="button">Search</button>
+          <!-- TODO: Connect search submission to backend API endpoint. -->
+        </form>
+        <p class="search-hint">Prototype only — results will appear here once connected.</p>
+      </section>
+
+      <section class="featured" aria-labelledby="featured-heading">
+        <h2 id="featured-heading">Featured AI Tools</h2>
+        <div class="card-grid">
+          <article class="card">
+            <h3>Insight Summarizer</h3>
+            <p>Transform long reports into concise insights with automated summarization.</p>
+            <a class="card__link" href="#">View details</a>
+          </article>
+          <article class="card">
+            <h3>Conversation Coach</h3>
+            <p>Coach teams with real-time feedback powered by adaptive language models.</p>
+            <a class="card__link" href="#">View details</a>
+          </article>
+          <article class="card">
+            <h3>Data Pattern Finder</h3>
+            <p>Surface trends across datasets with machine-learned clustering and tagging.</p>
+            <a class="card__link" href="#">View details</a>
+          </article>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="container">
+      <p>© <span id="copyright-year"></span> Search AI MVP. <a href="#">GitHub Repository</a></p>
+    </div>
+  </footer>
+</body>
+</html>
