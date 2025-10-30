@@ -175,9 +175,6 @@ const router = new Router({
 
 const viewState = {
   feedSearch: '',
-  feedTab: 'current',
-  feedSort: 'latest',
-  feedComposerOpen: false,
   eventsMonth: new Date().toISOString(),
   eventsSelectedDate: null,
 };
