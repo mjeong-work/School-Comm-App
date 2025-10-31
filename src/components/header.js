@@ -1,25 +1,44 @@
 const NAV_LINKS = [
-  { path: '#/feed', label: 'Feed' },
+  { path: '#/feed', label: 'Community' },
   { path: '#/events', label: 'Events' },
 ];
 
-export function renderHeader(target, { currentPath, user, router, authService, config }) {
+function createMenuIcon() {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />';
+  return svg;
+}
+
+export function renderHeader(target, { currentPath, user, router, authService }) {
   if (!target) return;
   target.innerHTML = '';
 
-  const container = document.createElement('div');
-  container.className = 'container';
+  const wrapper = document.createElement('div');
+  wrapper.className = 'container site-header__inner';
 
-  const title = document.createElement('h1');
-  title.className = 'site-title';
-  title.textContent = 'School Community App';
-  container.appendChild(title);
+  const primary = document.createElement('div');
+  primary.className = 'site-header__primary';
+
+  const brand = document.createElement('a');
+  brand.className = 'site-brand';
+  brand.href = '#/feed';
+  brand.textContent = 'Campus Connect';
+  brand.addEventListener('click', (event) => {
+    event.preventDefault();
+    router.navigate('#/feed');
+  });
 
   const nav = document.createElement('nav');
-  nav.setAttribute('aria-label', 'Primary navigation');
+  nav.className = 'site-nav';
+  nav.setAttribute('aria-label', 'Primary');
 
-  const list = document.createElement('ul');
-  list.className = 'nav-list';
+  const navList = document.createElement('ul');
+  navList.className = 'site-nav__list';
 
   const links = [...NAV_LINKS];
   if (user?.isAdmin) {
@@ -29,7 +48,7 @@ export function renderHeader(target, { currentPath, user, router, authService, c
   links.forEach((link) => {
     const listItem = document.createElement('li');
     const anchor = document.createElement('a');
-    anchor.className = 'nav-link';
+    anchor.className = 'site-nav__link';
     if (currentPath === link.path) {
       anchor.classList.add('active');
       anchor.setAttribute('aria-current', 'page');
@@ -38,51 +57,67 @@ export function renderHeader(target, { currentPath, user, router, authService, c
     anchor.textContent = link.label;
     anchor.addEventListener('click', (event) => {
       event.preventDefault();
+      navList.classList.remove('is-open');
+      menuButton.setAttribute('aria-expanded', 'false');
       router.navigate(link.path);
     });
     listItem.appendChild(anchor);
-    list.appendChild(listItem);
+    navList.appendChild(listItem);
   });
 
-  const profileItem = document.createElement('li');
-  profileItem.className = 'profile-menu';
+  const menuButton = document.createElement('button');
+  menuButton.type = 'button';
+  menuButton.className = 'site-header__menu-button';
+  menuButton.setAttribute('aria-expanded', 'false');
+  menuButton.setAttribute('aria-controls', 'primary-navigation');
+  menuButton.setAttribute('aria-label', 'Toggle navigation');
+  menuButton.appendChild(createMenuIcon());
+  menuButton.addEventListener('click', () => {
+    const isOpen = navList.classList.toggle('is-open');
+    menuButton.setAttribute('aria-expanded', String(isOpen));
+  });
+
+  navList.id = 'primary-navigation';
+  nav.appendChild(navList);
+
+  primary.append(brand, menuButton, nav);
+
+  const profile = document.createElement('div');
+  profile.className = 'site-header__profile';
 
   if (user) {
     const email = document.createElement('span');
-    email.className = 'profile-email';
+    email.className = 'site-header__email';
     email.textContent = user.email;
-    profileItem.appendChild(email);
+    profile.appendChild(email);
 
     if (!user.approved) {
-      const badge = document.createElement('span');
-      badge.className = 'badge';
-      badge.textContent = 'Pending approval';
-      profileItem.appendChild(badge);
+      const pendingBadge = document.createElement('span');
+      pendingBadge.className = 'badge badge--pending';
+      pendingBadge.textContent = 'Pending approval';
+      profile.appendChild(pendingBadge);
     }
 
     const signOutBtn = document.createElement('button');
     signOutBtn.type = 'button';
+    signOutBtn.className = 'button--ghost';
     signOutBtn.textContent = 'Sign out';
     signOutBtn.addEventListener('click', () => {
       authService.signOut();
       router.navigate('#/login');
     });
-    profileItem.appendChild(signOutBtn);
+    profile.appendChild(signOutBtn);
   } else {
-    const signInLink = document.createElement('a');
-    signInLink.className = 'nav-link';
-    signInLink.href = '#/login';
-    signInLink.textContent = 'Sign in';
-    signInLink.addEventListener('click', (event) => {
-      event.preventDefault();
+    const signInBtn = document.createElement('button');
+    signInBtn.type = 'button';
+    signInBtn.className = 'button--primary';
+    signInBtn.textContent = 'Sign in';
+    signInBtn.addEventListener('click', () => {
       router.navigate('#/login');
     });
-    profileItem.appendChild(signInLink);
+    profile.appendChild(signInBtn);
   }
 
-  list.appendChild(profileItem);
-  nav.appendChild(list);
-  container.appendChild(nav);
-
-  target.appendChild(container);
+  wrapper.append(primary, profile);
+  target.appendChild(wrapper);
 }

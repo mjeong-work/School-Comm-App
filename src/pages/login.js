@@ -3,55 +3,78 @@ export function createLoginPage(context) {
 
   function render(target) {
     const currentUser = authService.getCurrentUser();
-    const container = document.createElement('section');
-    container.className = 'container login-page';
+    const page = document.createElement('section');
+    page.className = 'login-page';
+
+    const container = document.createElement('div');
+    container.className = 'container login-grid';
+
+    const hero = document.createElement('div');
+    hero.className = 'login-hero';
+
+    const eyebrow = document.createElement('p');
+    eyebrow.className = 'page-intro__eyebrow';
+    eyebrow.textContent = 'Campus Connect';
+
+    const title = document.createElement('h1');
+    title.className = 'login-hero__title';
+    title.textContent = 'Log in with your school email';
+
+    const description = document.createElement('p');
+    description.className = 'login-hero__description';
+    description.textContent = 'Access verified community boards, RSVP to events, and stay aligned with the latest campus updates.';
+
+    hero.append(eyebrow, title, description);
 
     const panel = document.createElement('div');
-    panel.className = 'panel';
+    panel.className = 'login-panel';
 
     const header = document.createElement('div');
-    header.className = 'login-header';
+    header.className = 'login-panel__header';
 
-    const title = document.createElement('h2');
-    title.textContent = 'Sign in to continue';
-    header.appendChild(title);
-
-    const subtitle = document.createElement('p');
-    subtitle.textContent = 'Use your school-approved Google account to access the community feed and events.';
-    header.appendChild(subtitle);
-
+    const heading = document.createElement('h2');
+    heading.textContent = 'Sign in to continue';
+    const subheading = document.createElement('p');
+    subheading.textContent = 'Use a Google account that matches the approved school domains below.';
+    header.append(heading, subheading);
     panel.appendChild(header);
 
     if (!config.ALLOWED_DOMAINS?.length) {
-      const warning = document.createElement('p');
+      const warning = document.createElement('div');
       warning.className = 'alert';
       warning.textContent = 'No allowed email domains configured. Update the configuration before launching.';
       panel.appendChild(warning);
+    } else {
+      const domains = document.createElement('p');
+      domains.className = 'form-hint';
+      domains.textContent = `Accepted domains: ${config.ALLOWED_DOMAINS.join(', ')}`;
+      panel.appendChild(domains);
     }
 
     const signInBtn = document.createElement('button');
     signInBtn.type = 'button';
+    signInBtn.className = 'button--primary';
     signInBtn.textContent = 'Sign in with Google';
     signInBtn.addEventListener('click', () => openModal());
-
     panel.appendChild(signInBtn);
 
     if (currentUser) {
       const statusBox = document.createElement('div');
-      statusBox.className = 'alert';
+      statusBox.className = 'alert-banner alert-banner--info';
       statusBox.textContent = currentUser.approved
-        ? 'You are signed in and approved. Use the navigation above to visit the feed or events.'
-        : 'Your signup is pending approval. You can explore in read-only mode.';
+        ? 'You are signed in and approved. Use the navigation to explore the community.'
+        : 'Your signup is pending approval. You can explore in read-only mode until a moderator confirms your account.';
       panel.appendChild(statusBox);
     }
 
-    const mockDisclaimer = document.createElement('p');
+    const mockDisclaimer = document.createElement('div');
     mockDisclaimer.className = 'alert';
     mockDisclaimer.textContent = 'Authentication is mock only. Replace with production-ready Google Sign-In and secure APIs before deployment.';
     panel.appendChild(mockDisclaimer);
 
-    target.appendChild(container);
-    container.appendChild(panel);
+    container.append(hero, panel);
+    page.appendChild(container);
+    target.appendChild(page);
   }
 
   function openModal() {
@@ -109,6 +132,7 @@ export function createLoginPage(context) {
 
     const submitBtn = document.createElement('button');
     submitBtn.type = 'submit';
+    submitBtn.className = 'button--primary';
     submitBtn.textContent = 'Continue';
 
     form.append(emailLabel, emailInput, submitBtn);

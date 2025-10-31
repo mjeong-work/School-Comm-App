@@ -1,52 +1,130 @@
 import { createPostCard } from '../components/postCard.js';
 
+const BOARDS = [
+  { id: 'current-students', label: 'Current Students' },
+  { id: 'alumni', label: 'Alumni' },
+  { id: 'all-school', label: 'All School' },
+];
+
+const SORT_OPTIONS = [
+  { id: 'latest', label: 'Sort by: Latest' },
+  { id: 'popular', label: 'Sort by: Most loved' },
+];
+
+function createSearchIcon() {
+  return '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="20" y1="20" x2="16.65" y2="16.65"></line></svg>';
+}
+
 export function createFeedPage(context) {
   const { authService, postService, utils, config, viewState } = context;
   let searchTerm = viewState.feedSearch || '';
+  let boardFilter = viewState.feedBoard || BOARDS[0].id;
+  let sortOrder = viewState.feedSort || SORT_OPTIONS[0].id;
 
   function render(target) {
     const user = authService.getCurrentUser();
     const status = authService.requireApprovedUser(config);
     const readOnly = status.readOnly || !user?.approved;
 
-    const container = document.createElement('section');
-    container.className = 'container feed-page';
+    const page = document.createElement('section');
+    page.className = 'feed-page';
 
-    const header = document.createElement('div');
-    header.className = 'feed-header';
+    const container = document.createElement('div');
+    container.className = 'container';
+    page.appendChild(container);
 
-    const title = document.createElement('h2');
-    title.textContent = 'Community Feed';
-    header.appendChild(title);
+    const intro = document.createElement('div');
+    intro.className = 'page-intro';
 
+    const eyebrow = document.createElement('p');
+    eyebrow.className = 'page-intro__eyebrow';
+    eyebrow.textContent = 'Community Boards';
+
+    const heading = document.createElement('h1');
+    heading.textContent = 'Share updates with your campus';
+
+    const description = document.createElement('p');
+    description.textContent = 'Verified members can post, celebrate wins, and coordinate with fellow students.';
+
+    intro.append(eyebrow, heading, description);
+    container.appendChild(intro);
+
+    const tabs = document.createElement('div');
+    tabs.className = 'feed-tabs';
+    BOARDS.forEach((board) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'feed-tab';
+      button.textContent = board.label;
+      button.setAttribute('aria-pressed', String(boardFilter === board.id));
+      button.addEventListener('click', () => {
+        boardFilter = board.id;
+        viewState.feedBoard = boardFilter;
+        tabs.querySelectorAll('button').forEach((el) => el.setAttribute('aria-pressed', 'false'));
+        button.setAttribute('aria-pressed', 'true');
+        refreshPosts();
+      });
+      tabs.appendChild(button);
+    });
+    container.appendChild(tabs);
+
+    const controls = document.createElement('div');
+    controls.className = 'feed-controls';
+
+    const searchWrapper = document.createElement('div');
+    searchWrapper.className = 'feed-search';
+    const icon = document.createElement('span');
+    icon.className = 'feed-search__icon';
+    icon.innerHTML = createSearchIcon();
     const searchInput = document.createElement('input');
     searchInput.type = 'search';
-    searchInput.placeholder = 'Search posts and tags';
+    searchInput.placeholder = 'Search announcements, keywords, or tags';
     searchInput.value = searchTerm;
     searchInput.addEventListener('input', (event) => {
       searchTerm = event.target.value;
       viewState.feedSearch = searchTerm;
       refreshPosts();
     });
-    header.appendChild(searchInput);
+    searchWrapper.append(icon, searchInput);
+    controls.appendChild(searchWrapper);
 
-    container.appendChild(header);
+    const sortWrapper = document.createElement('div');
+    sortWrapper.className = 'feed-select';
+    const sortSelect = document.createElement('select');
+    SORT_OPTIONS.forEach((option) => {
+      const opt = document.createElement('option');
+      opt.value = option.id;
+      opt.textContent = option.label;
+      if (option.id === sortOrder) {
+        opt.selected = true;
+      }
+      sortSelect.appendChild(opt);
+    });
+    sortSelect.addEventListener('change', (event) => {
+      sortOrder = event.target.value;
+      viewState.feedSort = sortOrder;
+      refreshPosts();
+    });
+    sortWrapper.appendChild(sortSelect);
+    controls.appendChild(sortWrapper);
+
+    container.appendChild(controls);
 
     if (readOnly && user && !user.approved) {
       const info = document.createElement('div');
-      info.className = 'alert';
-      info.textContent = 'Your account is pending approval. You can view posts but cannot create, like, or comment yet.';
+      info.className = 'alert-banner alert-banner--info';
+      info.textContent = 'Your access is pending approval. You can browse and search posts until a moderator confirms your account.';
       container.appendChild(info);
     }
 
     const composer = document.createElement('form');
-    composer.className = 'panel feed-composer';
+    composer.className = 'card feed-composer';
     composer.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (!user || readOnly) return;
       const text = messageInput.value.trim();
       if (!text) {
-        composerError.textContent = 'Please enter a message before posting.';
+        composerError.textContent = 'Please add a note before posting to the board.';
         composerError.hidden = false;
         return;
       }
@@ -57,6 +135,7 @@ export function createFeedPage(context) {
         imageInput.value = '';
         composer.dataset.imageData = '';
         imagePreview.innerHTML = '';
+        imagePreview.classList.remove('is-visible');
         composerError.hidden = true;
       } catch (error) {
         composerError.textContent = error.message;
@@ -64,23 +143,35 @@ export function createFeedPage(context) {
       }
     });
 
+    const composerHeader = document.createElement('div');
+    composerHeader.className = 'feed-composer__header';
+    const composerTitle = document.createElement('h2');
+    composerTitle.textContent = 'Create a post';
+    const composerSubtitle = document.createElement('p');
+    composerSubtitle.className = 'form-hint';
+    composerSubtitle.textContent = 'Celebrate wins, share reminders, or ask for help. Images are optional but encouraged!';
+    composerHeader.append(composerTitle, composerSubtitle);
+    composer.appendChild(composerHeader);
+
     const messageLabel = document.createElement('label');
     messageLabel.setAttribute('for', 'new-post-message');
-    messageLabel.textContent = 'Share an update';
+    messageLabel.textContent = 'Post content';
     composer.appendChild(messageLabel);
 
     const messageInput = document.createElement('textarea');
     messageInput.id = 'new-post-message';
-    messageInput.placeholder = 'Celebrate wins, ask questions, or share reminders...';
+    messageInput.placeholder = 'What would you like to share with the community?';
     if (!user || readOnly) {
       messageInput.disabled = true;
-      messageInput.placeholder = readOnly ? 'Pending users cannot create posts yet.' : 'Sign in to share an update.';
+      messageInput.placeholder = readOnly
+        ? 'Moderators will enable posting once your account is approved.'
+        : 'Sign in to start contributing.';
     }
     composer.appendChild(messageInput);
 
     const imageLabel = document.createElement('label');
     imageLabel.setAttribute('for', 'new-post-image');
-    imageLabel.textContent = 'Optional image';
+    imageLabel.textContent = 'Upload image (optional)';
     composer.appendChild(imageLabel);
 
     const imageInput = document.createElement('input');
@@ -97,6 +188,7 @@ export function createFeedPage(context) {
       if (!file) {
         composer.dataset.imageData = '';
         imagePreview.innerHTML = '';
+        imagePreview.classList.remove('is-visible');
         return;
       }
       try {
@@ -107,31 +199,38 @@ export function createFeedPage(context) {
         img.src = processed;
         img.alt = 'Preview of uploaded image';
         imagePreview.appendChild(img);
+        imagePreview.classList.add('is-visible');
       } catch (error) {
         composerError.textContent = error.message;
         composerError.hidden = false;
         imageInput.value = '';
         imagePreview.innerHTML = '';
+        imagePreview.classList.remove('is-visible');
       }
     });
     composer.appendChild(imageInput);
 
     const imagePreview = document.createElement('div');
-    imagePreview.className = 'image-preview';
+    imagePreview.className = 'feed-composer__preview';
     composer.appendChild(imagePreview);
 
     const composerError = document.createElement('p');
-    composerError.className = 'alert';
+    composerError.className = 'form-error';
     composerError.hidden = true;
     composer.appendChild(composerError);
 
+    const composerActions = document.createElement('div');
+    composerActions.className = 'feed-composer__actions';
+
     const submitBtn = document.createElement('button');
     submitBtn.type = 'submit';
-    submitBtn.textContent = 'Post update';
+    submitBtn.className = 'button--primary';
+    submitBtn.textContent = 'Post to board';
     if (!user || readOnly) {
       submitBtn.disabled = true;
     }
-    composer.appendChild(submitBtn);
+    composerActions.appendChild(submitBtn);
+    composer.appendChild(composerActions);
 
     container.appendChild(composer);
 
@@ -142,13 +241,24 @@ export function createFeedPage(context) {
     function refreshPosts() {
       postsWrapper.innerHTML = '';
       const posts = postService.list({ search: searchTerm });
-      if (!posts.length) {
-        const empty = document.createElement('p');
-        empty.textContent = searchTerm ? 'No posts match your search yet.' : 'No posts yet. Start the conversation!';
+      let displayPosts = posts;
+      if (sortOrder === 'popular') {
+        displayPosts = [...posts].sort((a, b) => {
+          const likeDiff = (b.likes?.length || 0) - (a.likes?.length || 0);
+          if (likeDiff !== 0) return likeDiff;
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+      }
+      if (!displayPosts.length) {
+        const empty = document.createElement('div');
+        empty.className = 'card';
+        empty.textContent = searchTerm
+          ? 'No posts match your filters yet. Try a different keyword or board.'
+          : 'No posts yet. Kick things off with your first announcement!';
         postsWrapper.appendChild(empty);
         return;
       }
-      posts.forEach((post) => {
+      displayPosts.forEach((post) => {
         const card = createPostCard({
           post,
           context,
@@ -161,7 +271,7 @@ export function createFeedPage(context) {
 
     refreshPosts();
 
-    target.appendChild(container);
+    target.appendChild(page);
   }
 
   return {

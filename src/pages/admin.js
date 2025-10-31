@@ -3,28 +3,35 @@ export function createAdminPage(context) {
 
   function render(target) {
     const user = authService.getCurrentUser();
-    const container = document.createElement('section');
-    container.className = 'container admin-page';
+    const page = document.createElement('section');
+    page.className = 'admin-page';
 
-    const header = document.createElement('div');
-    header.className = 'admin-header';
+    const container = document.createElement('div');
+    container.className = 'container';
+    page.appendChild(container);
 
-    const title = document.createElement('h2');
-    title.textContent = 'Admin Console';
-    header.appendChild(title);
+    const intro = document.createElement('div');
+    intro.className = 'page-intro';
 
-    const subtitle = document.createElement('p');
-    subtitle.textContent = 'Manage community access, roles, and moderate content.';
-    header.appendChild(subtitle);
+    const eyebrow = document.createElement('p');
+    eyebrow.className = 'page-intro__eyebrow';
+    eyebrow.textContent = 'Admin Console';
 
-    container.appendChild(header);
+    const heading = document.createElement('h1');
+    heading.textContent = 'Guide your community safely';
+
+    const description = document.createElement('p');
+    description.textContent = 'Approve new members, elevate moderators, and keep conversations aligned with school values.';
+
+    intro.append(eyebrow, heading, description);
+    container.appendChild(intro);
 
     if (!user?.isAdmin) {
       const warning = document.createElement('div');
-      warning.className = 'alert';
-      warning.textContent = 'You do not have permission to view this page.';
+      warning.className = 'card';
+      warning.textContent = 'You do not have permission to view this page. Contact a moderator if you believe this is an error.';
       container.appendChild(warning);
-      target.appendChild(container);
+      target.appendChild(page);
       return;
     }
 
@@ -32,7 +39,7 @@ export function createAdminPage(context) {
     container.appendChild(renderUsers());
     container.appendChild(renderModeration());
 
-    target.appendChild(container);
+    target.appendChild(page);
   }
 
   function renderPending() {
@@ -58,23 +65,25 @@ export function createAdminPage(context) {
     table.appendChild(thead);
 
     const tbody = document.createElement('tbody');
-    pending.forEach((user) => {
+    pending.forEach((pendingUser) => {
       const row = document.createElement('tr');
       const emailCell = document.createElement('td');
-      emailCell.textContent = user.email;
+      emailCell.textContent = pendingUser.email;
       const dateCell = document.createElement('td');
-      dateCell.textContent = new Date(user.createdAt).toLocaleString();
+      dateCell.textContent = new Date(pendingUser.createdAt).toLocaleString();
       const actionCell = document.createElement('td');
       const approveBtn = document.createElement('button');
       approveBtn.type = 'button';
+      approveBtn.className = 'button--primary';
       approveBtn.textContent = 'Approve';
-      approveBtn.addEventListener('click', () => adminService.approve(user.id));
+      approveBtn.addEventListener('click', () => adminService.approve(pendingUser.id));
       const denyBtn = document.createElement('button');
       denyBtn.type = 'button';
-      denyBtn.textContent = 'Deny';
+      denyBtn.className = 'button--ghost';
+      denyBtn.textContent = 'Decline';
       denyBtn.addEventListener('click', () => {
         if (confirm('Remove this pending request?')) {
-          adminService.deny(user.id);
+          adminService.deny(pendingUser.id);
         }
       });
       actionCell.append(approveBtn, denyBtn);
@@ -91,7 +100,7 @@ export function createAdminPage(context) {
     section.className = 'admin-section';
 
     const heading = document.createElement('h3');
-    heading.textContent = 'Users';
+    heading.textContent = 'Members';
     section.appendChild(heading);
 
     const users = adminService.listUsers();
@@ -118,6 +127,7 @@ export function createAdminPage(context) {
       const adminCell = document.createElement('td');
       const adminToggle = document.createElement('button');
       adminToggle.type = 'button';
+      adminToggle.className = user.isAdmin ? 'button--ghost' : 'button--primary';
       adminToggle.textContent = user.isAdmin ? 'Remove admin' : 'Make admin';
       adminToggle.addEventListener('click', () => adminService.toggleAdmin(user.id));
       adminCell.appendChild(adminToggle);
@@ -125,6 +135,7 @@ export function createAdminPage(context) {
       if (user.email !== config.ADMIN_EMAIL_SEED) {
         const removeBtn = document.createElement('button');
         removeBtn.type = 'button';
+        removeBtn.className = 'button--danger';
         removeBtn.textContent = 'Delete user';
         removeBtn.addEventListener('click', () => {
           if (confirm('Delete this user and their content?')) {
@@ -149,11 +160,11 @@ export function createAdminPage(context) {
     section.className = 'admin-section';
 
     const heading = document.createElement('h3');
-    heading.textContent = 'Moderation';
+    heading.textContent = 'Moderation guidance';
     section.appendChild(heading);
 
     const description = document.createElement('p');
-    description.textContent = 'Use moderation controls within feed and events to remove inappropriate content.';
+    description.textContent = 'Use moderation controls within feed and events to remove inappropriate content. Encourage positive, inclusive communication across the community.';
     section.appendChild(description);
 
     return section;
