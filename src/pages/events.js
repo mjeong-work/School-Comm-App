@@ -10,39 +10,52 @@ export function createEventsPage(context) {
     const status = authService.requireApprovedUser(config);
     const readOnly = status.readOnly || !user?.approved;
 
-    const container = document.createElement('section');
-    container.className = 'container events-page';
+    const page = document.createElement('section');
+    page.className = 'events-page';
 
-    const header = document.createElement('div');
-    header.className = 'events-header';
+    const container = document.createElement('div');
+    container.className = 'container';
+    page.appendChild(container);
 
-    const title = document.createElement('h2');
-    title.textContent = 'Events';
-    header.appendChild(title);
+    const intro = document.createElement('div');
+    intro.className = 'page-intro';
 
-    const calendarContainer = document.createElement('div');
-    header.appendChild(calendarContainer);
-    container.appendChild(header);
+    const eyebrow = document.createElement('p');
+    eyebrow.className = 'page-intro__eyebrow';
+    eyebrow.textContent = 'Campus Calendar';
+
+    const title = document.createElement('h1');
+    title.textContent = 'Plan and join upcoming events';
+
+    const subtitle = document.createElement('p');
+    subtitle.textContent = 'Browse student-led gatherings, volunteer opportunities, and official campus happenings.';
+
+    intro.append(eyebrow, title, subtitle);
+    container.appendChild(intro);
 
     if (readOnly && user && !user.approved) {
       const info = document.createElement('div');
-      info.className = 'alert';
-      info.textContent = 'Pending approval accounts may view events but cannot RSVP yet.';
+      info.className = 'alert-banner alert-banner--info';
+      info.textContent = 'You can explore events while your access is pending. Moderators will unlock RSVP once approved.';
       container.appendChild(info);
     }
 
-    let eventsWrapper = document.createElement('div');
-    eventsWrapper.className = 'events-list';
-    container.appendChild(eventsWrapper);
+    const content = document.createElement('div');
+    content.className = 'events-content';
+    container.appendChild(content);
 
-    if (user?.isAdmin) {
-      container.insertBefore(createAdminForm(user, () => refreshEvents(eventsWrapper, user, readOnly)), eventsWrapper);
-    }
+    const calendarPanel = document.createElement('div');
+    calendarPanel.className = 'card events-calendar';
+    content.appendChild(calendarPanel);
 
-    renderCalendar(calendarContainer, () => refreshEvents(eventsWrapper, user, readOnly));
-    refreshEvents(eventsWrapper, user, readOnly);
+    const listColumn = document.createElement('div');
+    listColumn.className = 'events-column';
+    content.appendChild(listColumn);
 
-    target.appendChild(container);
+    renderCalendar(calendarPanel, () => refreshEvents(listColumn, user, readOnly));
+    refreshEvents(listColumn, user, readOnly);
+
+    target.appendChild(page);
   }
 
   function renderCalendar(target, onSelect) {
@@ -61,8 +74,7 @@ export function createEventsPage(context) {
 
     const prevBtn = document.createElement('button');
     prevBtn.type = 'button';
-    prevBtn.className = 'icon-button';
-    prevBtn.textContent = 'Prev';
+    prevBtn.textContent = 'Previous';
     prevBtn.addEventListener('click', () => {
       currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
       viewState.eventsMonth = currentMonth.toISOString();
@@ -71,7 +83,6 @@ export function createEventsPage(context) {
 
     const nextBtn = document.createElement('button');
     nextBtn.type = 'button';
-    nextBtn.className = 'icon-button';
     nextBtn.textContent = 'Next';
     nextBtn.addEventListener('click', () => {
       currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
@@ -137,33 +148,43 @@ export function createEventsPage(context) {
 
   function refreshEvents(wrapper, user, readOnly) {
     wrapper.innerHTML = '';
+    if (user?.isAdmin) {
+      wrapper.appendChild(createAdminForm(user, () => refreshEvents(wrapper, user, readOnly)));
+    }
+
+    const eventsContainer = document.createElement('div');
+    eventsContainer.className = 'events-list';
+
     const dateFilter = selectedDate ? selectedDate.toISOString().slice(0, 10) : null;
     const events = eventService.list({ date: dateFilter });
     if (!events.length) {
-      const empty = document.createElement('p');
+      const empty = document.createElement('div');
+      empty.className = 'card';
       empty.textContent = selectedDate
-        ? 'No events scheduled for this date yet.'
-        : 'No upcoming events yet. Check back soon or add one if you are an admin.';
-      wrapper.appendChild(empty);
-      return;
-    }
-    events.forEach((event) => {
-      const card = createEventCard({
-        event,
-        context,
-        currentUser: user,
-        readOnly: !user || readOnly,
+        ? 'No events scheduled for this date yet. Add one or try a different day.'
+        : 'No upcoming events yet. Check back soon or host the next gathering!';
+      eventsContainer.appendChild(empty);
+    } else {
+      events.forEach((event) => {
+        const card = createEventCard({
+          event,
+          context,
+          currentUser: user,
+          readOnly: !user || readOnly,
+        });
+        eventsContainer.appendChild(card);
       });
-      wrapper.appendChild(card);
-    });
+    }
+
+    wrapper.appendChild(eventsContainer);
   }
 
   function createAdminForm(user, onCreate) {
     const form = document.createElement('form');
-    form.className = 'panel events-admin-form';
+    form.className = 'card events-admin-form';
 
     const heading = document.createElement('h3');
-    heading.textContent = 'Add Event';
+    heading.textContent = 'Add event';
     form.appendChild(heading);
 
     const titleLabel = document.createElement('label');
@@ -198,40 +219,42 @@ export function createEventsPage(context) {
     const expectedInput = document.createElement('input');
     expectedInput.id = 'event-expected';
     expectedInput.type = 'number';
-    expectedInput.min = '0';
-    expectedInput.value = '25';
+    expectedInput.min = '1';
+    expectedInput.required = true;
+    expectedInput.placeholder = 'How many people can attend?';
     form.append(expectedLabel, expectedInput);
-
-    const errorMessage = document.createElement('p');
-    errorMessage.className = 'alert';
-    errorMessage.hidden = true;
-    form.appendChild(errorMessage);
 
     const submitBtn = document.createElement('button');
     submitBtn.type = 'submit';
-    submitBtn.textContent = 'Create event';
+    submitBtn.className = 'button--primary';
+    submitBtn.textContent = 'Publish event';
     form.appendChild(submitBtn);
 
     form.addEventListener('submit', (event) => {
       event.preventDefault();
-      try {
-        eventService.createEvent({
-          title: titleInput.value,
-          date: dateInput.value,
-          time: timeInput.value,
-          expectedAttendance: expectedInput.value,
-          createdBy: user.id,
-        });
-        titleInput.value = '';
-        dateInput.value = '';
-        timeInput.value = '';
-        expectedInput.value = '25';
-        errorMessage.hidden = true;
-        onCreate();
-      } catch (error) {
-        errorMessage.textContent = error.message;
-        errorMessage.hidden = false;
+      if (!user?.isAdmin) return;
+      const payload = {
+        title: titleInput.value.trim(),
+        date: dateInput.value,
+        time: timeInput.value,
+        expectedAttendance: Number(expectedInput.value) || 0,
+      };
+      if (!payload.title || !payload.date || !payload.time || !payload.expectedAttendance) {
+        alert('Please fill all fields before publishing.');
+        return;
       }
+      eventService.createEvent({
+        title: payload.title,
+        date: payload.date,
+        time: payload.time,
+        expectedAttendance: payload.expectedAttendance,
+        createdBy: user.id,
+      });
+      titleInput.value = '';
+      dateInput.value = '';
+      timeInput.value = '';
+      expectedInput.value = '';
+      onCreate();
     });
 
     return form;
